@@ -1,6 +1,6 @@
 # Báo cáo bài thực hành Ngày 1 – Đọc prediction YOLO11 để hiểu định dạng nhãn
 
-**Ngày chạy:**
+**Ngày chạy:*11/6/2026*
 
 **Runtime Colab:** CPU/GPU
 
@@ -37,12 +37,19 @@
 **Mở file:** `day1_lab_outputs/classification_predictions.json` và `visuals/classification_top5.png`.  
 Chỉ dùng ảnh `sample_id = traffic`, lấy dòng `rank = 1`.
 
-1. Chép record hạng 1: `class_id`=… ; `class_name`=… ; `rank`=1 ; `score`=… ; `taxonomy_name`=…
+1. Chép record hạng 1: `class_id`= 468 ; `class_name`= cab ; `rank`=1 ; `score`= 0.510915 ; `taxonomy_name`= ImageNet-1K
 2. Record này nói về **cả bức ảnh** hay về **một vật thể riêng** trong ảnh? Vì sao bạn nghĩ vậy?
+ Bản ghi này mô tả cho toàn bộ bức ảnh chứ không phải một vật thể riêng lẻ.
 3. Danh sách tên lớp (class list) do đâu mà có: model tự nghĩ ra, hay đi kèm taxonomy/checkpoint?
+ Danh sách này đi kèm với taxonomy/checkpoint (cụ thể ở đây là tập nhãn chuẩn của ImageNet-1K gồm 1000 lớp mà mô hình YOLOv11-cls đã được huấn luyện trên đó). Mô hình không thể tự nghĩ ra các tên lớp mới nằm ngoài tập dữ liệu huấn luyện này.
 4. Vì sao cần ghi cả `class_id`, `class_name` và `taxonomy_name`, không chỉ ghi mỗi tên lớp?
+ Tránh trùng lặp & nhầm lẫn và co tính nhất quán.
 5. Nếu trong ảnh có nhiều vật / nhiều chủ đề, guideline cần nói rõ điều gì để người gán nhãn chọn **một** lớp?
+ Quy tắc đối tượng chính (Dominant Object)
+ Quy tắc bối cảnh tổng thể (Global Context)
+ Quy tắc phân cấp ưu tiên
 6. Vì sao không được lấy `score` của model làm ground truth?
+  score: Điểm số độ tin cậy của thuật toán toán học tại thời điểm dự đoán, nó không đại diện cho thực tế khách quan còn Ground truth phải là sự thật tuyệt đối.
 
 ## 2. Phát hiện vật thể
 
@@ -50,12 +57,30 @@ Chỉ dùng ảnh `sample_id = traffic`, lấy dòng `rank = 1`.
 Chỉ dùng ảnh `sample_id = kitchen`. Chọn **một** record.  
 Số lượng prediction theo ngưỡng: xem output ô so sánh `0.20` / `0.35` / `0.60` trong notebook.
 
-1. Chép một record: `class_name`=… ; `score`=… ; `bbox_xyxy`=[…, …, …, …] ; `bbox_width`=… ; `bbox_height`=…
+1. Chép một record: `class_name`= bus; `score`= 0.912557 ; `bbox_xyxy`=[93.17,187.95,223.01,320.91] ; `bbox_width`= 129.84 ; `bbox_height`= 132.96
 2. Giải thích box bằng lời thường: góc trên-trái ở đâu, góc dưới-phải ở đâu, rộng/cao bao nhiêu pixel?
+ Đối tượng được phát hiện là xe buýt (bus).
+ Góc trên-trái của box nằm tại tọa độ (93.17, 187.95) px, tức cách mép trái ảnh khoảng 93 px và cách mép trên ảnh khoảng 188 px.
+ Góc dưới-phải của box nằm tại tọa độ (223.01, 320.91) px, tức cách mép trái ảnh khoảng 223 px và cách mép trên ảnh khoảng 321 px.
+ Box có:
+ Chiều rộng: 129.84 px
+ Chiều cao: 132.96 px
+ Nói đơn giản: hộp bao phủ khu vực chứa xe buýt, bắt đầu từ vùng gần giữa bên trái của ảnh và kéo dài khoảng 130 × 133 pixel.
 3. Chọn hai ngưỡng (vd. 0.20 và 0.60). Mỗi ngưỡng có bao nhiêu prediction?
+ Với dữ liệu vd: kết quả là 1 và 1.
 4. Khi hạ ngưỡng (giữ nhiều hộp hơn), người **reviewer** phải làm thêm việc gì?
+ reviewer phải xem và xác nhận nhiều box hơn, đặc biệt là các box chất lượng thấp dễ bị sai
 5. Viết **một quy tắc box** để người gán nhãn làm theo (áp dụng được cho nhiều ảnh, không chỉ ảnh này).
+ Vẽ bounding box ôm sát phần nhìn thấy của đối tượng, để mép box tiếp xúc gần nhất với biên ngoài của vật thể và không bao gồm quá nhiều nền xung quanh.
 6. Trên ảnh `kitchen`, chỉ ra **một** vật bị che khuất hoặc cắt mép. Bạn sẽ viết thành quy tắc trong guideline, hay đưa lên hỏi Lab Coach (escalation)? Vì sao?
+ Đưa vào guideline nếu: Vẫn gán nhãn đối tượng nếu có thể nhận dạng chắc chắn, và box chỉ bao quanh phần nhìn thấy của vật thể."
+
+ Escalation lên Lab Coach nếu:
+Không rõ vật thể thuộc lớp nào.
+Mức che khuất quá lớn khiến không thể xác định chắc chắn.
+Có nhiều cách diễn giải hợp lý dẫn đến nhãn khác nhau.
+
+ Kết luận: Với các trường hợp che khuất/cắt mép thông thường nên đưa vào guideline để mọi annotator làm giống nhau; chỉ escalate khi không thể xác định nhãn hoặc quy tắc chưa đủ rõ để ra quyết định nhất quán.
 
 ## 3. Phân đoạn theo từng đối tượng
 
