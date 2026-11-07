@@ -49,7 +49,7 @@ Chỉ dùng ảnh `sample_id = traffic`, lấy dòng `rank = 1`.
 > Quy tắc bối cảnh tổng thể (Global Context)
 > Quy tắc phân cấp ưu tiên
 6. Vì sao không được lấy `score` của model làm ground truth?
-  score: Điểm số độ tin cậy của thuật toán toán học tại thời điểm dự đoán, nó không đại diện cho thực tế khách quan còn Ground truth phải là sự thật tuyệt đối.
+> score: Điểm số độ tin cậy của thuật toán toán học tại thời điểm dự đoán, nó không đại diện cho thực tế khách quan còn Ground truth phải là sự thật tuyệt đối.
 
 ## 2. Phát hiện vật thể
 
@@ -82,31 +82,28 @@ Số lượng prediction theo ngưỡng: xem output ô so sánh `0.20` / `0.35` 
 **Mở file:** `day1_lab_outputs/segmentation_predictions.json` và `visuals/segmentation_prediction.png`.  
 Chỉ dùng ảnh `sample_id = kitchen`. Chọn **một** record.
 
-1. Chép một record: `instance_id`= traffic-001 ; `class_name`= 5 ; `score`= 0.925745 ; số điểm polygon=`polygon_point_count`= 120 ; 3–5 điểm đầu của `polygon_xy`= [
-      [
-        148.0,
-        189.0
-      ],
-      [
-        147.0,
-        190.0
-      ],
-      [
-        145.0,
-        190.0
-      ],
-      [
-        143.0,
-        192.0
-      ],
-      [
-        142.0,
-        192.0
-      ],
+1. Chép một record: `instance_id`= traffic-001 ; `class_name`= 5 ; `score`= 0.925745 ; số điểm polygon=`polygon_point_count`= 120 ; 3–5 điểm đầu của `polygon_xy`= (148.0, 189.0)
+(147.0, 190.0)
+(145.0, 190.0)
+(143.0, 192.0)
+(142.0, 192.0)
 2. So với box, polygon cho thêm thông tin gì về hình dạng vật thể?
+>  Bounding box chỉ cho biết vùng hình chữ nhật bao quanh vật thể: x1=95.3, y1=188.72 ; x2=224.08, y2=319.96
+> Polygon cho biết đường biên thực tế của vật thể bằng nhiều điểm nối với nhau.
+> polygon thể hiện: Hình dạng thật của vật thể. Các góc, cạnh, phần lồi lõm. Diện tích chính xác hơn để huấn luyện segmentation.
 3. `instance_id` dùng để làm gì? Nó **không** phải class ID và **không** phải tracking ID — bạn hiểu câu này thế nào?
+> instance_id = traffic-001 là mã định danh của một đối tượng cụ thể trong ảnh.
+> Hiểu câu:
+> Không phải class ID và không phải tracking ID.
+> Không phải class ID
+> Class ID dùng để chỉ loại đối tượng.
+> Không phải tracking ID
+> Tracking ID dùng để theo dõi cùng một vật thể qua nhiều frame video.
+> Trong dữ liệu này không có video tracking.
 4. Viết **một quy tắc vẽ biên mask** để người gán nhãn làm theo.
+> Vẽ mask bám sát ranh giới phần nhìn thấy của vật thể; không lấn sang nền và không suy đoán phần bị che khuất.
 5. Trên ảnh `kitchen`, chỉ ra **một** chỗ biên mờ / hai vật chạm nhau / bị che. Bạn dùng guideline hay escalation? Vì sao?
+> Chưa có ảnh kitchen, nên không thể xác định chính xác vị trí.
 
 ## 4. Vòng đời và kiểm tra chất lượng
 
@@ -118,14 +115,19 @@ Lab hôm nay chỉ **xem prediction**. Chuỗi dưới đây là vòng đời pr
 
 | Tác vụ | Ground truth trông như thế nào? (đơn vị nhãn) | Lỗi hoặc chỗ khó quyết định bạn thấy trên ảnh/JSON | Annotator làm gì? | Reviewer xem gì? |
 | --- | --- | --- | --- | --- |
-| Phân loại ảnh |  |  |  |  |
-| Phát hiện vật thể |  |  |  |  |
-| Instance segmentation |  |  |  |  |
+| Phân loại ảnh | Một nhãn cho toàn ảnh (vd: kitchen, traffic) | Ảnh chứa nhiều chủ đề, khó chọn nhãn chính | Chọn class đúng theo guideline | Kiểm tra nhãn có phù hợp nội dung ảnh không |
+| Phát hiện vật thể | Bounding box + class cho từng vật | Box quá rộng hoặc quá chật; vật bị che khuất hoặc cắt mép | Vẽ box ôm sát vật thể nhìn thấy và gán đúng class | Kiểm tra class, vị trí box, kích thước box, box thiếu hoặc thừa |
+| Instance segmentation | Polygon/mask + class cho từng instance | Biên mờ, vật chạm nhau, vật bị che; polygon có 120 điểm nên dễ lệch biên | Vẽ mask bám sát biên nhìn thấy, tách riêng từng instance | Kiểm tra độ chính xác của mask, biên có lấn nền hay bỏ sót không |
 
 ## 5. An toàn dữ liệu
 
 1. Quy tắc bảo vệ dữ liệu của bạn cho bài lab này là gì? (viết 1 câu)
+> Quy tắc bảo vệ dữ liệu
+> Chỉ sử dụng dữ liệu và hình ảnh cho mục đích của bài lab, không sao chép, chia sẻ, tải xuống hoặc phát tán ra ngoài môi trường được cấp phép.
+
 2. Nếu gặp ảnh hoặc dữ liệu không đúng phạm vi, bạn sẽ dừng và báo cho ai?
+> Nếu gặp dữ liệu không đúng phạm vi
+> Dừng xử lý ngay, ghi nhận vấn đề và báo cho Lab Coach hoặc người phụ trách dự án/QC theo quy trình của dự án trước khi tiếp tục làm việc.
 
 ## 6. Checklist trước khi nộp link repo
 
